@@ -1,0 +1,79 @@
+<!doctype html>
+<title>is_inside_polygon?</title>
+<meta charset="utf-8">
+<button onclick="location.reload()">another</button>
+<canvas id="canvas">
+<script>
+rx=()=>Math.random()*document.all.canvas.width
+ry=()=>Math.random()*document.all.canvas.height
+
+var p=[]
+for(var i=0; i<4; i++){ // triangles are always convex
+    p.push({x:rx(),y:ry()})
+}
+function side(px,p1,p2){
+    /*
+    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+    Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
+    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+    It is 0 on the line, and +1 on one side, -1 on the other side.
+    */
+    var Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
+    function sign(x){
+        if(x==0) return 0
+        else if(x>0) return 1
+        else return -1
+    }
+    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+    return position
+}
+// work for convex quads/triangles
+while(true){
+if(side(p[0], p[1], p[2])!=-1){
+    [p[2],p[1]]=[p[1],p[2]]
+    continue
+}
+if(typeof p[3]=='undefined') break
+if(side(p[1], p[2], p[3])!=-1){
+    [p[3],p[2]]=[p[2],p[3]]
+    continue
+}
+if(side(p[2], p[3], p[0])!=-1){
+    [p[0],p[3]]=[p[3],p[0]]
+    continue
+}
+break
+}
+var c=document.all.canvas.getContext("2d")
+var dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
+
+for(var x=0; x<document.all.canvas.width; x++)
+    for(var y=0; y<document.all.canvas.height; y++)
+    {
+        function inside(px,p){
+            var check = (x1,x2)=> side(px,x1,x2)<=0
+            for(var i=0; i<p.length; i++){
+                if(!check(p[i],p[(i+1)%p.length])) return false
+            }
+            return true
+        }
+        c.fillStyle=inside({x,y},p)?'grey':'black'
+        dp(x,y)
+    }
+
+dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
+
+c.fillStyle='red'
+dbp(p[0])
+
+c.fillStyle='green'
+dbp(p[1])
+
+c.fillStyle='blue'
+dbp(p[2])
+
+if(typeof p[3]!='undefined'){
+c.fillStyle='yellow'
+dbp(p[3])
+}
+</script>
