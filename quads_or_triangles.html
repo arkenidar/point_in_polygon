@@ -8,7 +8,9 @@ rx=()=>Math.random()*document.all.canvas.width
 ry=()=>Math.random()*document.all.canvas.height
 
 var p=[]
-for(var i=0; i<4; i++){ // triangles are always convex
+for(var i=0; i<4; i++){ // todo: change here for triangles(3) vs quads(4)
+    // triangles are always convex...
+    // ... and not self-intersecting
     p.push({x:rx(),y:ry()})
 }
 function side(px,p1,p2){
@@ -27,7 +29,7 @@ function side(px,p1,p2){
     position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
     return position
 }
-// work for convex quads/triangles
+// this works for convex quads/triangles
 while(true){
 if(side(p[0], p[1], p[2])!=-1){
     [p[2],p[1]]=[p[1],p[2]]
@@ -44,20 +46,28 @@ if(side(p[2], p[3], p[0])!=-1){
 }
 break
 }
+
+var t // triangles. for quads 2 triangles: t[0] and t[1]
+t=[ // ATM this is always for quads
+    [p[0],p[1],p[2]],
+    [p[0],p[2],p[3]],
+]
+
 var c=document.all.canvas.getContext("2d")
 var dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
 
 for(var x=0; x<document.all.canvas.width; x++)
     for(var y=0; y<document.all.canvas.height; y++)
     {
-        function inside(px,p){
+        function inside(px,p){ // px: a given point, p: a polygon (list of points)
             var check = (x1,x2)=> side(px,x1,x2)<=0
             for(var i=0; i<p.length; i++){
                 if(!check(p[i],p[(i+1)%p.length])) return false
             }
             return true
         }
-        c.fillStyle=inside({x,y},p)?'grey':'black'
+        // ATM this is always for quads
+        c.fillStyle=inside({x,y},t[0])||inside({x,y},t[1])?'grey':'black'
         dp(x,y)
     }
 
