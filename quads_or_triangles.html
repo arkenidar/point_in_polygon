@@ -33,10 +33,10 @@ let j // *** JSON to describe a polygon
 // This was freezing the browser. It needed bug hunting.
 // Solved: this is a case of 3 vertices on 1 line. 180° angle, no concavity, no convexity.
 // The sorting of vertices "sort_p()" was changed accordingly to not loop forever, by handling this case nicely.
-j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
+//j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
 
 // this works for sure. good base test case
-//j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
+j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 
 p=JSON.parse(j) // sets a predefined polygon
 
@@ -139,6 +139,13 @@ if(inside(px,t)){
 }
 }
 */
+let colors=['red','green','blue','yellow','orange']
+let quad_indices=[[0,1,2],[1,2,3],[2,3,0],[3,0,1]]
+for(let [i,indices] of quad_indices.entries()){
+    var vertex_i=(i+1)%p.length
+    var is_concavity=side(p[indices[2]],p[indices[0]],p[indices[1]])==1
+    console.log(colors[vertex_i],is_concavity)
+}
 
 // *** original theme: "point in polygon" check
 // https://en.wikipedia.org/wiki/Point_in_polygon
@@ -181,22 +188,22 @@ draw_vertices(p)
 function draw_vertices(p){
 dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
 
-c.fillStyle='red'
+c.fillStyle=colors[0]
 dbp(p[0])
 
-c.fillStyle='green'
+c.fillStyle=colors[1]
 dbp(p[1])
 
-c.fillStyle='blue'
+c.fillStyle=colors[2]
 dbp(p[2])
 
 if(typeof p[3]!='undefined'){ // 4 vertices
-c.fillStyle='yellow'
+c.fillStyle=colors[3]
 dbp(p[3])
 }
 
 if(typeof p[4]!='undefined'){ // 5 vertices
-c.fillStyle='orange'
+c.fillStyle=colors[4]
 dbp(p[4])
 }
 } // end of draw_vertices(p)
