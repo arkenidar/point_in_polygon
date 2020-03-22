@@ -1,18 +1,60 @@
 <!doctype html>
 <title>is_inside_polygon?</title>
 <meta charset="utf-8">
-<button onclick="location.reload()">another</button>
+this should be a way to test the "concavity cutting" concacavity solving algorithm.
+I refer to concavity solving because convex polygon are easier to deal with,
+but concavity needs special attention.
+<button onclick="location.reload()">another (reload)</button><br>
 <canvas id="canvas">
 <script>
-rx=()=>Math.random()*document.all.canvas.width
-ry=()=>Math.random()*document.all.canvas.height
 
-var p=[]
-for(var i=0; i<4; i++){ // todo: change here for triangles(3) vs quads(4)
+// *** 2D canvas
+const c=document.all.canvas.getContext("2d")
+
+// random x and y
+rx=()=>parseInt(Math.random()*document.all.canvas.width)
+ry=()=>parseInt(Math.random()*document.all.canvas.height)
+
+let p // vertices, polygon points
+// concave quads are not supported ??? TODO by triangulation or "concavity cutting"
+// self-intersection should be manually avoided TODO
+p=[]
+// *** TODO: change here for triangles(3) vs quads(4). or more if supported!
+p.length=4
+
+for(let i=0; i<p.length; i++){
     // triangles are always convex...
     // ... and not self-intersecting
-    p.push({x:rx(),y:ry()})
+    p[i]={x:rx(),y:ry()}
 }
+
+let j // *** JSON to describe a polygon
+
+// this ATM freezes the browser. seems needing a bug hunting
+j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
+
+// this works for sure. good base test case
+j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
+
+//p=JSON.parse(j) // sets a predefined polygon
+
+console.log(JSON.stringify(p))
+
+// bounds of polygon "p"
+let [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
+for(let point of p){
+    xmin=Math.min(xmin,point.x)
+    xmax=Math.max(xmax,point.x)
+    ymin=Math.min(ymin,point.y)
+    ymax=Math.max(ymax,point.y)
+}
+
+// use them to draw a bounding rectangle
+c.fillStyle='pink'
+c.fillRect(xmin,ymin,xmax-xmin,ymax-ymin)
+
+// important formula:
+// *** point px on which side of the line passing through p1 and p2 points
 function side(px,p1,p2){
     /*
     https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
@@ -20,7 +62,7 @@ function side(px,p1,p2){
     position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
     It is 0 on the line, and +1 on one side, -1 on the other side.
     */
-    var Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
+    let Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
     function sign(x){
         if(x==0) return 0
         else if(x>0) return 1
@@ -29,13 +71,16 @@ function side(px,p1,p2){
     position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
     return position
 }
-// this works for convex quads/triangles
+
+sort_p(p)
+function sort_p(p){
+// this works for convex quads/triangles (concavity/convexity)
 while(true){
 if(side(p[0], p[1], p[2])!=-1){
     [p[2],p[1]]=[p[1],p[2]]
     continue
 }
-if(typeof p[3]=='undefined') break
+if(typeof p[3]=='undefined') break // for triangles
 if(side(p[1], p[2], p[3])!=-1){
     [p[3],p[2]]=[p[2],p[3]]
     continue
@@ -45,32 +90,93 @@ if(side(p[2], p[3], p[0])!=-1){
     continue
 }
 break
-}
+} // end of while
+} // end of sort_p(p)
 
-var t // triangles. for quads 2 triangles: t[0] and t[1]
-t=[ // ATM this is always for quads
-    [p[0],p[1],p[2]],
-    [p[0],p[2],p[3]],
+// "polygon triangulation" required
+// https://en.wikipedia.org/wiki/Polygon_triangulation
+let t // triangles. for 1 quad use 2 triangles: t[0] and t[1]
+t=[ // ATM this is only for quads (2 triangles)
+    [p[0],p[1],p[2]], // always at least 1 triangle
+]
+if(p.length==4) t.push([p[0],p[2],p[3]]) // quad case
+
+/*
+// triangle to draw (ttd)
+let ttd=[p[3],p[1],p[2]] // yellow green blue
+// triangle not to draw (tntd)
+let tntd=[p[3],p[1],p[0]] // or null // yellow green red
+
+// *** producing what to draw or not to draw
+// case of quad: possible triangles (pt)
+let pt=[
+[p[0],p[1],p[2]], // 3
+[p[2],p[0],p[1]],
+[p[1],p[2],p[0]],
+
+[p[0],p[1],p[3]], // 2
+[p[3],p[0],p[1]],
+[p[1],p[3],p[0]],
+
+[p[0],p[2],p[3]], // 1
+[p[3],p[0],p[2]],
+[p[2],p[3],p[0]],
+
+[p[1],p[2],p[3]], // 0
+[p[3],p[1],p[2]],
+[p[2],p[3],p[1]],
+
 ]
 
-var c=document.all.canvas.getContext("2d")
-var dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
+// related to: to draw or not to draw
+// ATM seems unproper, not working!
+for(let px of p) for(let t of pt){
+if(inside(px,t)){
+    tntd=t
+    break // quads only
+}
+}
+*/
 
-for(var x=0; x<document.all.canvas.width; x++)
-    for(var y=0; y<document.all.canvas.height; y++)
-    {
-        function inside(px,p){ // px: a given point, p: a polygon (list of points)
-            var check = (x1,x2)=> side(px,x1,x2)<=0
-            for(var i=0; i<p.length; i++){
-                if(!check(p[i],p[(i+1)%p.length])) return false
-            }
-            return true
-        }
-        // ATM this is always for quads
-        c.fillStyle=inside({x,y},t[0])||inside({x,y},t[1])?'grey':'black'
-        dp(x,y)
+// *** original theme: "point in polygon" check
+// https://en.wikipedia.org/wiki/Point_in_polygon
+function inside(px,p){ // px: a given point, p: a polygon (list of points)
+    const check = (p1,p2)=> side(px,p1,p2)<=0
+    for(let i=0; i<p.length; i++){
+        if(!check(p[i],p[(i+1)%p.length])) return false
     }
+    return true
+}
 
+draw_polygon(p)
+function draw_polygon(p,fillStyle='grey'){
+// *** draw pixel
+const dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
+
+// *** fill polygon
+c.fillStyle=fillStyle
+for(let x=xmin; x<=xmax; x++) for(let y=ymin; y<=ymax; y++){
+    let draw_or_not
+    // ATM this is only for triangle or quad (2 triangles forming 1 quad)
+    if(p.length==3) draw_or_not=inside({x,y},t[0])
+    if(p.length==4) draw_or_not=inside({x,y},t[0])||inside({x,y},t[1])
+
+    // boolean subtraction: A and (not B)
+    if(false) // deactivated
+    if(tntd==null)
+    draw_or_not=inside({x,y},ttd)
+    else
+    draw_or_not=inside({x,y},ttd)&&!inside({x,y},tntd)
+
+    //c.fillStyle=draw_or_not?fillStyle:'black'
+    //dp(x,y)
+    if(draw_or_not) dp(x,y)
+}
+}
+
+// *** draw big pixels for vertices
+draw_vertices(p)
+function draw_vertices(p){
 dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
 
 c.fillStyle='red'
@@ -82,8 +188,14 @@ dbp(p[1])
 c.fillStyle='blue'
 dbp(p[2])
 
-if(typeof p[3]!='undefined'){
+if(typeof p[3]!='undefined'){ // 4 vertices
 c.fillStyle='yellow'
 dbp(p[3])
 }
+
+if(typeof p[4]!='undefined'){ // 5 vertices
+c.fillStyle='orange'
+dbp(p[4])
+}
+} // end of draw_vertices(p)
 </script>
