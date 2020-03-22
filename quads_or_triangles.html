@@ -30,13 +30,15 @@ for(let i=0; i<p.length; i++){
 
 let j // *** JSON to describe a polygon
 
-// this ATM freezes the browser. seems needing a bug hunting
+// This was freezing the browser. It needed bug hunting.
+// Solved: this is a case of 3 vertices on 1 line. 180° angle, no concavity, no convexity.
+// The sorting of vertices "sort_p()" was changed accordingly to not loop forever, by handling this case nicely.
 j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
 
 // this works for sure. good base test case
-j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
+//j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 
-//p=JSON.parse(j) // sets a predefined polygon
+p=JSON.parse(j) // sets a predefined polygon
 
 console.log(JSON.stringify(p))
 
@@ -76,16 +78,16 @@ sort_p(p)
 function sort_p(p){
 // this works for convex quads/triangles (concavity/convexity)
 while(true){
-if(side(p[0], p[1], p[2])!=-1){
+if(side(p[0], p[1], p[2])==1){
     [p[2],p[1]]=[p[1],p[2]]
     continue
 }
 if(typeof p[3]=='undefined') break // for triangles
-if(side(p[1], p[2], p[3])!=-1){
+if(side(p[1], p[2], p[3])==1){
     [p[3],p[2]]=[p[2],p[3]]
     continue
 }
-if(side(p[2], p[3], p[0])!=-1){
+if(side(p[2], p[3], p[0])==1){
     [p[0],p[3]]=[p[3],p[0]]
     continue
 }
