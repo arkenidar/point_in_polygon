@@ -6,7 +6,9 @@ NOTE: Only CONVEX polygons are well supported ATM. Also remember drawing them co
 This will be a way to test the "concavity cutting" concavity solving algorithm.
 I refer to concavity solving because convex polygons are easier to deal with,
 but concavity needs special attention.
-<!-- <button onclick="clear_canvas(); random_polygon(p);set_p(p)">another (reload)</button> --> <br>
+<!-- <button onclick="p.length=4; random_polygon(p);set_p(p)">random quad</button> -->
+<button onclick="location.reload()">reload</button>
+<br>
 <canvas id="canvas" onclick="on_canvas_click(event)">
 <script>
 
@@ -21,7 +23,7 @@ return {
 }
 
 let point=mouse_pos(event)
-console.log(point)
+///console.log(point) // LOG
 p.push(point)
 set_p(p)
 }
@@ -75,7 +77,8 @@ j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 ////set_p(p)
 
 function set_p(p){
-console.log(JSON.stringify(p))
+//console.log(JSON.stringify(p)) // LOG
+clear_canvas()
 // bounds of polygon "p"
 let [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
 for(let point of p){
