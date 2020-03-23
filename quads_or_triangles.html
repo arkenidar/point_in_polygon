@@ -77,10 +77,35 @@ j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 ////set_p(p)
 
 function set_p(p){
-//console.log(JSON.stringify(p)) // LOG
+// TODO handle special cases: concave polygons, aligned vertices, coincident vertices, self-intersecting polygons
+console.log(JSON.stringify(p)) // LOG
 clear_canvas()
+
+let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
+for(let [i,point] of p.entries()){
+    let vertex_i=(i+0)%p.length
+    let li=(i)=>i<p.length?(i<0?i+p.length:i):i-p.length // loop index
+    let is_concavity=side(p[li(i+1)],p[li(i-1)],p[li(i)])==1
+    console.log(colors(vertex_i),is_concavity)
+    if(is_concavity)
+        iv.push(vertex_i)
+}
+console.log('iv',JSON.stringify(iv)) // LOG
+
+p=convex_hull(p)
+console.log('ch',JSON.stringify(p)) // LOG
+
+function convex_hull(p){
+    let cp=[] // convex polygon
+    for(let [i,vertex] of p.entries()){
+        if(iv.indexOf(i)==-1)
+            cp.push(vertex)
+    }
+    return cp
+}
+
 // bounds of polygon "p"
-let [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
+var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
 for(let point of p){
     xmin=Math.min(xmin,point.x)
     xmax=Math.max(xmax,point.x)
@@ -197,7 +222,11 @@ if(inside(px,t)){
 }
 */
 ///function set_p(p){
+function colors(index){
 let colors=['red','green','blue','yellow','orange','violet'] // color of vertices
+return colors[index%colors.length]
+}
+
 /*
 let quad_indices=[[0,1,2],[1,2,3],[2,3,0],[3,0,1]]
 quad_indices.length=p.length==4?4:1 // TODO generalize it beyond quads(4)
@@ -276,7 +305,7 @@ function draw_vertices(p){
 dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
 
 for(const [index,point] of p.entries()){
-    c.fillStyle=colors[index%colors.length]
+    c.fillStyle=colors(index) ///colors[index%colors.length]
     dbp(point)
 }
 
