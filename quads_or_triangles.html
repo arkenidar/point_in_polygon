@@ -11,6 +11,34 @@ but concavity needs special attention.
 <br>
 <canvas id="canvas" onclick="on_canvas_click(event)">
 <script>
+// important formula:
+// *** point px on which side of the line passing through p1 and p2 points
+function side(px,p1,p2){
+    /*
+    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+    Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
+    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+    It is 0 on the line, and +1 on one side, -1 on the other side.
+    */
+    let Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
+    function sign(x){
+        if(x==0) return 0
+        else if(x>0) return 1
+        else return -1
+    }
+    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+    return position
+}
+// *** original theme: "point in polygon" check
+// https://en.wikipedia.org/wiki/Point_in_polygon
+function inside(px,p){ // px: a given point, p: a polygon (list of points)
+    if(p.length<=2) return false
+    const check = (p1,p2)=> side(px,p1,p2)<=0
+    for(let i=0; i<p.length; i++){
+        if(!check(p[i],p[(i+1)%p.length])) return false
+    }
+    return true
+}
 
 function on_canvas_click(event){
 
@@ -24,7 +52,10 @@ return {
 
 let point=mouse_pos(event)
 ///console.log(point) // LOG
+
+if(inside(point,p)==false)
 p.push(point)
+
 set_p(p)
 }
 
@@ -81,6 +112,7 @@ function set_p(p){
 console.log(JSON.stringify(p)) // LOG
 clear_canvas()
 
+if(false){ // TODO possibly replaced by: "if point is inside do not add it" -> convex hull
 let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
 for(let [i,point] of p.entries()){
     let vertex_i=(i+0)%p.length
@@ -103,6 +135,7 @@ function convex_hull(p){
     }
     return cp
 }
+} // end of if
 
 // bounds of polygon "p"
 var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
@@ -116,25 +149,6 @@ for(let point of p){
 // use them to draw a bounding rectangle
 c.fillStyle='pink'
 c.fillRect(xmin,ymin,xmax-xmin,ymax-ymin)
-
-// important formula:
-// *** point px on which side of the line passing through p1 and p2 points
-function side(px,p1,p2){
-    /*
-    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
-    Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    It is 0 on the line, and +1 on one side, -1 on the other side.
-    */
-    let Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
-    function sign(x){
-        if(x==0) return 0
-        else if(x>0) return 1
-        else return -1
-    }
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    return position
-}
 
 // the following triggers bugs in sort_p()
 //p=JSON.parse(`[{"x":176,"y":16},{"x":151,"y":4},{"x":58,"y":17},{"x":244,"y":38}]`)
@@ -260,15 +274,6 @@ draw_polygon(p)
 draw_polygon(p)
 
 ///} // end of function set_p(p){
-// *** original theme: "point in polygon" check
-// https://en.wikipedia.org/wiki/Point_in_polygon
-function inside(px,p){ // px: a given point, p: a polygon (list of points)
-    const check = (p1,p2)=> side(px,p1,p2)<=0
-    for(let i=0; i<p.length; i++){
-        if(!check(p[i],p[(i+1)%p.length])) return false
-    }
-    return true
-}
 
 function draw_polygon(p,fillStyle='grey'){
 // *** draw pixel
