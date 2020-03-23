@@ -1,15 +1,39 @@
 <!doctype html>
 <title>is_inside_polygon?</title>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+NOTE: Only CONVEX polygons are well supported ATM. Also remember drawing them counter-clockwise. <br>
 This will be a way to test the "concavity cutting" concavity solving algorithm.
 I refer to concavity solving because convex polygons are easier to deal with,
 but concavity needs special attention.
-<button onclick="location.reload()">another (reload)</button><br>
-<canvas id="canvas">
+<!-- <button onclick="clear_canvas(); random_polygon(p);set_p(p)">another (reload)</button> --> <br>
+<canvas id="canvas" onclick="on_canvas_click(event)">
 <script>
+
+function on_canvas_click(event){
+
+function mouse_pos(event){
+let rect=document.all.canvas.getBoundingClientRect()
+return {
+  x: event.clientX - rect.left,
+  y: event.clientY - rect.top
+}
+}
+
+let point=mouse_pos(event)
+console.log(point)
+p.push(point)
+set_p(p)
+}
 
 // *** 2D canvas
 const c=document.all.canvas.getContext("2d")
+
+clear_canvas()
+function clear_canvas(){
+c.fillStyle='black'
+c.fillRect(0,0,document.all.canvas.width,document.all.canvas.height)
+}
 
 // random x and y
 rx=()=>parseInt(Math.random()*document.all.canvas.width)
@@ -20,12 +44,11 @@ let p // vertices, polygon points
 // self-intersection should be manually avoided TODO
 p=[]
 // *** TODO: change here for triangles(3) vs quads(4). or more if supported!
-p.length=4
-
-for(let i=0; i<p.length; i++){
-    // triangles are always convex...
-    // ... and not self-intersecting
-    p[i]={x:rx(),y:ry()}
+////p.length=4 // minimum 3
+// triangles (3) are always convex and not self-intersecting (except for special cases)
+////random_polygon(p)
+function random_polygon(p){
+for(let i=0; i<p.length; i++) p[i]={x:rx(),y:ry()}
 }
 
 let j // *** JSON to describe a polygon
@@ -33,15 +56,26 @@ let j // *** JSON to describe a polygon
 // This was freezing the browser. It needed bug hunting.
 // Solved: this is a case of 3 vertices on 1 line. 180° angle, no concavity, no convexity.
 // The sorting of vertices "sort_p()" was changed accordingly to not loop forever, by handling this case nicely.
-//j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
+////j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
 
 // this works for sure. good base test case
 j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 
-p=JSON.parse(j) // sets a predefined polygon
+// this visually breaks when not sorting vertices
+//j=`[{"x":65,"y":79},{"x":71,"y":12},{"x":190,"y":91},{"x":174,"y":46}]`
 
+////p=JSON.parse(j) // sets a predefined polygon
+
+///console.log(JSON.stringify(p))
+
+///p=[p[0],p[3],p[1],p[2]] // TODO
+///p=[{"x":144,"y":33},{"x":139,"y":140},{"x":265,"y":85},{"x":158,"y":115}] // TODO
+///p=JSON.parse("[{\"x\":158,\"y\":115},{\"x\":139,\"y\":140},{\"x\":265,\"y\":85},{\"x\":144,\"y\":33}]") // works fine TODO cleanup
+
+////set_p(p)
+
+function set_p(p){
 console.log(JSON.stringify(p))
-
 // bounds of polygon "p"
 let [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
 for(let point of p){
@@ -74,7 +108,10 @@ function side(px,p1,p2){
     return position
 }
 
-sort_p(p)
+// the following triggers bugs in sort_p()
+//p=JSON.parse(`[{"x":176,"y":16},{"x":151,"y":4},{"x":58,"y":17},{"x":244,"y":38}]`)
+
+////sort_p(p) /// TODO remember it was disabled
 function sort_p(p){
 // this works for convex quads/triangles (concavity/convexity)
 while(true){
@@ -83,6 +120,8 @@ if(side(p[0], p[1], p[2])==1){
     continue
 }
 if(typeof p[3]=='undefined') break // for triangles
+// for quads
+if(p.length==4){
 if(side(p[1], p[2], p[3])==1){
     [p[3],p[2]]=[p[2],p[3]]
     continue
@@ -91,10 +130,23 @@ if(side(p[2], p[3], p[0])==1){
     [p[0],p[3]]=[p[3],p[0]]
     continue
 }
+if(side(p[3], p[0], p[1])==1){ // this causes problems with quads that have 1 concavity
+    [p[0],p[3]]=[p[3],p[0]]
+    //continue
+}
+} // end of quad handling
+// for 5 sides
+if(p.length==5){
+// TODO handle this case
+console.log("sort_p() doesn't handle this")
+}
+
 break
 } // end of while
 } // end of sort_p(p)
 
+//let t=polygon_triangulation(p)
+function polygon_triangulation(p){
 // "polygon triangulation" required
 // https://en.wikipedia.org/wiki/Polygon_triangulation
 let t // triangles. for 1 quad use 2 triangles: t[0] and t[1]
@@ -102,6 +154,8 @@ t=[ // ATM this is only for quads (2 triangles)
     [p[0],p[1],p[2]], // always at least 1 triangle
 ]
 if(p.length==4) t.push([p[0],p[2],p[3]]) // quad case
+return t
+}
 
 /*
 // triangle to draw (ttd)
@@ -139,14 +193,41 @@ if(inside(px,t)){
 }
 }
 */
-let colors=['red','green','blue','yellow','orange']
+///function set_p(p){
+let colors=['red','green','blue','yellow','orange','violet'] // color of vertices
+/*
 let quad_indices=[[0,1,2],[1,2,3],[2,3,0],[3,0,1]]
+quad_indices.length=p.length==4?4:1 // TODO generalize it beyond quads(4)
+
+let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
 for(let [i,indices] of quad_indices.entries()){
     var vertex_i=(i+1)%p.length
     var is_concavity=side(p[indices[2]],p[indices[0]],p[indices[1]])==1
     console.log(colors[vertex_i],is_concavity)
+    if(is_concavity)
+        iv.push(vertex_i)
 }
+*/
+//////
+/*
+if(iv.length){
+    let full_polygon=p.slice()
+    full_polygon.splice(iv[0],1)
+    draw_polygon(full_polygon)
 
+    // draw the background to cut the concavities
+    const li=(i)=>i<p.length?(i<0?i+p.length:i):i-p.length // loop index
+    const vertex=iv[0]
+    let empty_polygon=[p[li(vertex+1)],p[li(vertex)],p[li(vertex-1)]]
+    draw_polygon(empty_polygon,'pink') // use e.g. violet to make it visible
+}
+else
+draw_polygon(p)
+*/
+
+draw_polygon(p)
+
+///} // end of function set_p(p){
 // *** original theme: "point in polygon" check
 // https://en.wikipedia.org/wiki/Point_in_polygon
 function inside(px,p){ // px: a given point, p: a polygon (list of points)
@@ -157,7 +238,6 @@ function inside(px,p){ // px: a given point, p: a polygon (list of points)
     return true
 }
 
-draw_polygon(p)
 function draw_polygon(p,fillStyle='grey'){
 // *** draw pixel
 const dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
@@ -166,9 +246,10 @@ const dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
 c.fillStyle=fillStyle
 for(let x=xmin; x<=xmax; x++) for(let y=ymin; y<=ymax; y++){
     let draw_or_not
-    // ATM this is only for triangle or quad (2 triangles forming 1 quad)
-    if(p.length==3) draw_or_not=inside({x,y},t[0])
-    if(p.length==4) draw_or_not=inside({x,y},t[0])||inside({x,y},t[1])
+    // ATM this is only for triangle or quad (2 triangles forming 1 quad) *** deactivated
+    ////if(p.length==3) draw_or_not=inside({x,y},t[0])
+    ////if(p.length==4) draw_or_not=inside({x,y},t[0])||inside({x,y},t[1])
+    draw_or_not=inside({x,y},p)
 
     // boolean subtraction: A and (not B)
     if(false) // deactivated
@@ -177,9 +258,12 @@ for(let x=xmin; x<=xmax; x++) for(let y=ymin; y<=ymax; y++){
     else
     draw_or_not=inside({x,y},ttd)&&!inside({x,y},tntd)
 
-    //c.fillStyle=draw_or_not?fillStyle:'black'
-    //dp(x,y)
+    //c.fillStyle=draw_or_not?fillStyle:'black'; dp(x,y)
+
     if(draw_or_not) dp(x,y)
+
+    // generalized possibly TODO this has bugs
+    //if(inside({x,y},p)) dp(x,y)
 }
 }
 
@@ -188,6 +272,12 @@ draw_vertices(p)
 function draw_vertices(p){
 dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
 
+for(const [index,point] of p.entries()){
+    c.fillStyle=colors[index%colors.length]
+    dbp(point)
+}
+
+/*
 c.fillStyle=colors[0]
 dbp(p[0])
 
@@ -206,5 +296,9 @@ if(typeof p[4]!='undefined'){ // 5 vertices
 c.fillStyle=colors[4]
 dbp(p[4])
 }
+*/
+
 } // end of draw_vertices(p)
+
+} // end of set_p(p)
 </script>
