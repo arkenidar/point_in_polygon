@@ -6,11 +6,24 @@ NOTE: Only CONVEX polygons are well supported ATM. Also remember drawing them co
 This will be a way to test the "concavity cutting" concavity solving algorithm.
 I refer to concavity solving because convex polygons are easier to deal with,
 but concavity needs special attention.
+UPDATE: concavity handling seems to work well.
+But remember to not self-intersect and to use counter-clockwise ordering.
 <!-- <button onclick="p.length=4; random_polygon(p);set_p(p)">random quad</button> -->
 <button onclick="location.reload()">reload</button>
 <br>
 <canvas id="canvas" onclick="on_canvas_click(event)">
 <script>
+
+const log=console.log
+
+function skip(p){
+    formed=[]
+    for(i in p){
+        if(false==inside(p[i],formed)) formed.push(p[i])
+    }
+    return formed
+}
+
 // important formula:
 // *** point px on which side of the line passing through p1 and p2 points
 function side(px,p1,p2){
@@ -42,6 +55,7 @@ function inside(px,p){ // px: a given point, p: a polygon (list of points)
 
 // bounds of polygon "p"
 function bounds_of_poligon(p){
+if(p.length<1) return
 var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
 for(let point of p){
     xmin=Math.min(xmin,point.x)
@@ -122,20 +136,52 @@ j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 
 // TODO WIP function draw_concavity(polygon)
 function draw_concavity(polygon){
+if(polygon.length<3) return
+let p=polygon
 let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
 const li=(i)=>i<polygon.length?(i<0?i+polygon.length:i):i-polygon.length // loop index
-for(const [i,point] of p.entries()){
+//let ch=[] // convex hull
+for(const [i,point] of polygon.entries()){
     const is_concavity=side(p[li(i+1)],p[li(i-1)],p[li(i)])==1
+    
+    
+    
+    // TODO: point is INSIDE polygon?
+    const is_inside_polygon=inside(point,polygon)
+    ///if(!is_inside_polygon) ch.push(point)
+
     ///console.log(colors(i),is_concavity,'draw_concavity(polygon)')
-    if(is_concavity){
+    if(is_concavity){ // is_concavity or is_inside_polygon
         iv.push(i)
         // TODO note: break means only 1 vertex at most (or 0)
         break
     }
 }
-if(iv.length>0){
+
+function convex_hull(polygon){
+let changed
+let chp=polygon.slice() // convex hull polygon
+while(true){
+changed=false
+for(const [i,point] of chp.entries()){
+    // TODO: point is INSIDE polygon?
+    const is_inside_polygon=inside(point,chp)
+    if(is_inside_polygon){
+        chp.splice(i,1)
+        changed=true
+        break
+    }
+}
+if(!changed) break
+}
+return chp
+}
+//let ch=convex_hull(polygon) //// overwrites previous ch use (this is second)
+///if(iv.length>0){
+let ch=skip(polygon) /////////////!!!!!!!!!!!!!!! this is third "ch" (ConvexHull) way experimented
+if(polygon.length!=0 && ch.length!=0 && polygon.length!=ch.length){ // convex hull is different
     let c=iv[0] // first TODO current
-    ///console.log('c',c)
+    console.log('c',c)
 
     polygon=polygon.slice()
     let concavity=[ polygon[li(c+1)], polygon[li(c)], polygon[li(c-1)] ]
@@ -143,8 +189,10 @@ if(iv.length>0){
     let without=polygon.slice()
     without.splice(c,1)
     ///alert(draw_polygon)
-    draw_concavity(without.slice(),'grey') // recursive function call
-    draw_polygon(concavity.slice(),'pink') // or black
+    
+    console.log(ch,'ch')
+    draw_concavity(without.slice(),'grey') // recursive function call // ch.slice()
+    draw_polygon(concavity.slice(),'black') // pink or black
 }
 //else console.log('iv empty')
 else
@@ -161,20 +209,13 @@ function set_p(p){
 // TODO handle special cases: concave polygons, aligned vertices, coincident vertices, self-intersecting polygons
 ///console.log(JSON.stringify(p)) // LOG
 clear_canvas()
-const log=console.log
-
-
-
-let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
-
 // use them to draw a bounding rectangle
-c.fillStyle='pink'
+let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
+c.fillStyle='black' // pink or black
 c.fillRect(xmin,ymin,xmax-xmin,ymax-ymin)
-
 // first draw polygon, then draw vertices "big pixels"
 draw_concavity(p)
 draw_vertices(p)
-
 } // end of set_p(p)
 
 // the following triggers bugs in sort_p()
