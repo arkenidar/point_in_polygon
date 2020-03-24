@@ -1,412 +1,141 @@
 <!doctype html>
-<title>is_inside_polygon?</title>
+<title>polygon</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-NOTE: Only CONVEX polygons are well supported ATM. Also remember drawing them counter-clockwise. <br>
-This will be a way to test the "concavity cutting" concavity solving algorithm.
-I refer to concavity solving because convex polygons are easier to deal with,
-but concavity needs special attention.
-UPDATE: concavity handling seems to work well.
-But remember to not self-intersect and to use counter-clockwise ordering.
-<!-- <button onclick="p.length=4; random_polygon(p);set_p(p)">random quad</button> -->
+remember to not self-intersect and to use counter-clockwise ordering.
 <button onclick="location.reload()">reload</button>
 <br>
-<canvas id="canvas" onclick="on_canvas_click(event)">
+<canvas id="canvas"></canvas>
 <script>
+    const log = console.log;
+    const canvas = document.getElementById('canvas');
+    canvas.onclick = on_canvas_click;
 
-const log=console.log
+    // *** point px on which side of the line passing through p1 and p2 points
+    function side(px, p1, p2) {
+        /*
+        https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+        Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
+        position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+        It is 0 on the line, and +1 on one side, -1 on the other side.
+        */
+        let Ax = p1.x, Ay = p1.y, Bx = p2.x, By = p2.y, X = px.x, Y = px.y;
 
-function skip(p){
-    formed=[]
-    for(i in p){
-        if(false==inside(p[i],formed)) formed.push(p[i])
+        function sign(x) {
+            if (x === 0) return 0;
+            else if (x > 0) return 1;
+            else return -1
+        }
+
+        return sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax));
     }
-    return formed
-}
 
-// important formula:
-// *** point px on which side of the line passing through p1 and p2 points
-function side(px,p1,p2){
-    /*
-    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
-    Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    It is 0 on the line, and +1 on one side, -1 on the other side.
-    */
-    let Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=px.x, Y=px.y
-    function sign(x){
-        if(x==0) return 0
-        else if(x>0) return 1
-        else return -1
+    // https://en.wikipedia.org/wiki/Point_in_polygon
+    function inside(px, p) { // px: a given point, p: a polygon (list of points)
+        if (p.length <= 2) return false;
+        const check = (p1, p2) => side(px, p1, p2) <= 0;
+        for (let i = 0; i < p.length; i++) {
+            if (!check(p[i], p[(i + 1) % p.length])) return false
+        }
+        return true
     }
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    return position
-}
-// *** original theme: "point in polygon" check
-// https://en.wikipedia.org/wiki/Point_in_polygon
-function inside(px,p){ // px: a given point, p: a polygon (list of points)
-    if(p.length<=2) return false
-    const check = (p1,p2)=> side(px,p1,p2)<=0
-    for(let i=0; i<p.length; i++){
-        if(!check(p[i],p[(i+1)%p.length])) return false
+
+    function bounds_of_polygon(p) {
+        if (p.length < 1) return;
+        let [x_min, x_max, y_min, y_max] = [p[0].x, p[0].y, p[0].x, p[0].y];
+        for (const point of p) {
+            x_min = Math.min(x_min, point.x);
+            x_max = Math.max(x_max, point.x);
+            y_min = Math.min(y_min, point.y);
+            y_max = Math.max(y_max, point.y);
+        }
+        return {x_min: x_min, y_min: y_min, x_max: x_max, y_max: y_max};
     }
-    return true
-}
 
-// bounds of polygon "p"
-function bounds_of_poligon(p){
-if(p.length<1) return
-var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
-for(let point of p){
-    xmin=Math.min(xmin,point.x)
-    xmax=Math.max(xmax,point.x)
-    ymin=Math.min(ymin,point.y)
-    ymax=Math.max(ymax,point.y)
-}
-return {xmin,ymin,xmax,ymax}
-}
+    let p = []; // vertices, polygon points
 
-function on_canvas_click(event){
+    function on_canvas_click(event) {
+        function mouse_pos(event) {
+            let rect = canvas.getBoundingClientRect();
+            return {
+                x: event.clientX - rect.left,
+                y: event.clientY - rect.top
+            };
+        }
 
-function mouse_pos(event){
-let rect=document.all.canvas.getBoundingClientRect()
-return {
-  x: event.clientX - rect.left,
-  y: event.clientY - rect.top
-}
-}
-
-let point=mouse_pos(event)
-///console.log(point) // LOG
-
-// this if excludes points inside the convex hull
-///if(inside(point,p)==false)
-p.push(point)
-
-set_p(p)
-}
-
-// *** 2D canvas
-const c=document.all.canvas.getContext("2d")
-
-clear_canvas()
-function clear_canvas(){
-c.fillStyle='black'
-c.fillRect(0,0,document.all.canvas.width,document.all.canvas.height)
-}
-
-// random x and y
-rx=()=>parseInt(Math.random()*document.all.canvas.width)
-ry=()=>parseInt(Math.random()*document.all.canvas.height)
-
-let p // vertices, polygon points
-// concave quads are not supported ??? TODO by triangulation or "concavity cutting"
-// self-intersection should be manually avoided TODO
-p=[]
-// *** TODO: change here for triangles(3) vs quads(4). or more if supported!
-////p.length=4 // minimum 3
-// triangles (3) are always convex and not self-intersecting (except for special cases)
-////random_polygon(p)
-function random_polygon(p){
-for(let i=0; i<p.length; i++) p[i]={x:rx(),y:ry()}
-}
-
-let j // *** JSON to describe a polygon
-
-// This was freezing the browser. It needed bug hunting.
-// Solved: this is a case of 3 vertices on 1 line. 180° angle, no concavity, no convexity.
-// The sorting of vertices "sort_p()" was changed accordingly to not loop forever, by handling this case nicely.
-////j=`[{"x":60,"y":65},{"x":292,"y":65},{"x":233,"y":65},{"x":190,"y":88}]`
-
-// this works for sure. good base test case
-j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
-
-// this visually breaks when not sorting vertices
-//j=`[{"x":65,"y":79},{"x":71,"y":12},{"x":190,"y":91},{"x":174,"y":46}]`
-
-////p=JSON.parse(j) // sets a predefined polygon
-
-///console.log(JSON.stringify(p))
-
-///p=[p[0],p[3],p[1],p[2]] // TODO
-///p=[{"x":144,"y":33},{"x":139,"y":140},{"x":265,"y":85},{"x":158,"y":115}] // TODO
-///p=JSON.parse("[{\"x\":158,\"y\":115},{\"x\":139,\"y\":140},{\"x\":265,\"y\":85},{\"x\":144,\"y\":33}]") // works fine TODO cleanup
-
-////set_p(p)
-
-// TODO WIP function draw_concavity(polygon)
-function draw_concavity(polygon){
-if(polygon.length<3) return
-let p=polygon
-let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
-const li=(i)=>i<polygon.length?(i<0?i+polygon.length:i):i-polygon.length // loop index
-//let ch=[] // convex hull
-for(const [i,point] of polygon.entries()){
-    const is_concavity=side(p[li(i+1)],p[li(i-1)],p[li(i)])==1
-    
-    
-    
-    // TODO: point is INSIDE polygon?
-    const is_inside_polygon=inside(point,polygon)
-    ///if(!is_inside_polygon) ch.push(point)
-
-    ///console.log(colors(i),is_concavity,'draw_concavity(polygon)')
-    if(is_concavity){ // is_concavity or is_inside_polygon
-        iv.push(i)
-        // TODO note: break means only 1 vertex at most (or 0)
-        break
+        let point = mouse_pos(event);
+        p.push(point);
+        set_p(p);
     }
-}
 
-function convex_hull(polygon){
-let changed
-let chp=polygon.slice() // convex hull polygon
-while(true){
-changed=false
-for(const [i,point] of chp.entries()){
-    // TODO: point is INSIDE polygon?
-    const is_inside_polygon=inside(point,chp)
-    if(is_inside_polygon){
-        chp.splice(i,1)
-        changed=true
-        break
+    // *** 2D canvas
+    const c = canvas.getContext("2d");
+    clear_canvas();
+
+    function clear_canvas() {
+        c.fillStyle = 'black';
+        c.fillRect(0, 0, canvas.width, canvas.height);
     }
-}
-if(!changed) break
-}
-return chp
-}
-//let ch=convex_hull(polygon) //// overwrites previous ch use (this is second)
-///if(iv.length>0){
-let ch=skip(polygon) /////////////!!!!!!!!!!!!!!! this is third "ch" (ConvexHull) way experimented
-if(polygon.length!=0 && ch.length!=0 && polygon.length!=ch.length){ // convex hull is different
-    let c=iv[0] // first TODO current
-    console.log('c',c)
 
-    polygon=polygon.slice()
-    let concavity=[ polygon[li(c+1)], polygon[li(c)], polygon[li(c-1)] ]
+    function draw_concavity(polygon) {
+        if (polygon.length < 3) return;
+        let p = polygon;
+        let iv = []; // inside vertices, vertices inside the convex hull of the given polygon
+        const li = (i) => i < polygon.length ? (i < 0 ? i + polygon.length : i) : i - polygon.length; // loop index
+        for (let i = 0; i < polygon.length; i++) {
+            const is_concavity = side(p[li(i + 1)], p[li(i - 1)], p[li(i)]) === 1;
+            if (is_concavity) {
+                iv.push(i);
+                break; // break means only 1 vertex at most (or 0)
+            }
+        }
+        if (iv.length > 0) {
+            let c = iv[0]; // first, current
+            polygon = polygon.slice();
+            let concavity = [polygon[li(c + 1)], polygon[li(c)], polygon[li(c - 1)]];
+            let without = polygon.slice();
+            without.splice(c, 1);
+            draw_concavity(without.slice(), 'grey'); // recursive function call
+            draw_polygon(concavity.slice(), 'black'); // pink or black
+        } else {
+            draw_polygon(polygon.slice());
+        }
+    } // end of draw_concavity(polygon)
+    function set_p(p) {
+        clear_canvas();
+        // draw a bounding rectangle
+        let {x_min, y_min, x_max, y_max} = bounds_of_polygon(p);
+        c.fillStyle = 'black'; // pink or black
+        c.fillRect(x_min, y_min, x_max - x_min, y_max - y_min);
+        // first draw polygon, then draw vertices "big pixels"
+        draw_concavity(p);
+        draw_vertices(p);
+    }
 
-    let without=polygon.slice()
-    without.splice(c,1)
-    ///alert(draw_polygon)
-    
-    console.log(ch,'ch')
-    draw_concavity(without.slice(),'grey') // recursive function call // ch.slice()
-    draw_polygon(concavity.slice(),'black') // pink or black
-}
-//else console.log('iv empty')
-else
-{
-    draw_polygon(polygon.slice())
-}
-} // end of draw_concavity(polygon)
+    function colors(index) {
+        let colors = ['red', 'green', 'blue', 'yellow', 'orange', 'violet'];
+        return colors[index % colors.length]
+    }
 
-///note on VERSION
-//view-source:https://arkenidar.github.io/point_in_polygon/quads_or_triangles.html
-// https://github.com/arkenidar/point_in_polygon/commit/abdc256a1d52e32ef40d0f183f0e1c4f1d3bd036
+    function draw_polygon(p, fillStyle = 'grey') {
+        // *** draw pixel
+        const dp = (x, y, s = 1) => {
+            c.fillRect(x, y, s, s)
+        };
+        let {x_min, y_min, x_max, y_max} = bounds_of_polygon(p);
+        // *** fill polygon
+        c.fillStyle = fillStyle;
+        for (let x = x_min; x <= x_max; x++) for (let y = y_min; y <= y_max; y++) {
+            if (inside({x, y}, p)) dp(x, y)
+        }
+    }
 
-function set_p(p){
-// TODO handle special cases: concave polygons, aligned vertices, coincident vertices, self-intersecting polygons
-///console.log(JSON.stringify(p)) // LOG
-clear_canvas()
-// use them to draw a bounding rectangle
-let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
-c.fillStyle='black' // pink or black
-c.fillRect(xmin,ymin,xmax-xmin,ymax-ymin)
-// first draw polygon, then draw vertices "big pixels"
-draw_concavity(p)
-draw_vertices(p)
-} // end of set_p(p)
-
-// the following triggers bugs in sort_p()
-//p=JSON.parse(`[{"x":176,"y":16},{"x":151,"y":4},{"x":58,"y":17},{"x":244,"y":38}]`)
-
-////sort_p(p) /// TODO remember it was disabled
-function sort_p(p){
-// this works for convex quads/triangles (concavity/convexity)
-while(true){
-if(side(p[0], p[1], p[2])==1){
-    [p[2],p[1]]=[p[1],p[2]]
-    continue
-}
-if(typeof p[3]=='undefined') break // for triangles
-// for quads
-if(p.length==4){
-if(side(p[1], p[2], p[3])==1){
-    [p[3],p[2]]=[p[2],p[3]]
-    continue
-}
-if(side(p[2], p[3], p[0])==1){
-    [p[0],p[3]]=[p[3],p[0]]
-    continue
-}
-if(side(p[3], p[0], p[1])==1){ // this causes problems with quads that have 1 concavity
-    [p[0],p[3]]=[p[3],p[0]]
-    //continue
-}
-} // end of quad handling
-// for 5 sides
-if(p.length==5){
-// TODO handle this case
-console.log("sort_p() doesn't handle this")
-}
-
-break
-} // end of while
-} // end of sort_p(p)
-
-//let t=polygon_triangulation(p)
-function polygon_triangulation(p){
-// "polygon triangulation" required
-// https://en.wikipedia.org/wiki/Polygon_triangulation
-let t // triangles. for 1 quad use 2 triangles: t[0] and t[1]
-t=[ // ATM this is only for quads (2 triangles)
-    [p[0],p[1],p[2]], // always at least 1 triangle
-]
-if(p.length==4) t.push([p[0],p[2],p[3]]) // quad case
-return t
-}
-
-/*
-// triangle to draw (ttd)
-let ttd=[p[3],p[1],p[2]] // yellow green blue
-// triangle not to draw (tntd)
-let tntd=[p[3],p[1],p[0]] // or null // yellow green red
-
-// *** producing what to draw or not to draw
-// case of quad: possible triangles (pt)
-let pt=[
-[p[0],p[1],p[2]], // 3
-[p[2],p[0],p[1]],
-[p[1],p[2],p[0]],
-
-[p[0],p[1],p[3]], // 2
-[p[3],p[0],p[1]],
-[p[1],p[3],p[0]],
-
-[p[0],p[2],p[3]], // 1
-[p[3],p[0],p[2]],
-[p[2],p[3],p[0]],
-
-[p[1],p[2],p[3]], // 0
-[p[3],p[1],p[2]],
-[p[2],p[3],p[1]],
-
-]
-
-// related to: to draw or not to draw
-// ATM seems unproper, not working!
-for(let px of p) for(let t of pt){
-if(inside(px,t)){
-    tntd=t
-    break // quads only
-}
-}
-*/
-///function set_p(p){
-function colors(index){
-let colors=['red','green','blue','yellow','orange','violet'] // color of vertices
-return colors[index%colors.length]
-}
-
-/*
-let quad_indices=[[0,1,2],[1,2,3],[2,3,0],[3,0,1]]
-quad_indices.length=p.length==4?4:1 // TODO generalize it beyond quads(4)
-
-let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
-for(let [i,indices] of quad_indices.entries()){
-    var vertex_i=(i+1)%p.length
-    var is_concavity=side(p[indices[2]],p[indices[0]],p[indices[1]])==1
-    console.log(colors[vertex_i],is_concavity)
-    if(is_concavity)
-        iv.push(vertex_i)
-}
-*/
-//////
-/*
-if(iv.length){
-    let full_polygon=p.slice()
-    full_polygon.splice(iv[0],1)
-    draw_polygon(full_polygon)
-
-    // draw the background to cut the concavities
-    const li=(i)=>i<p.length?(i<0?i+p.length:i):i-p.length // loop index
-    const vertex=iv[0]
-    let empty_polygon=[p[li(vertex+1)],p[li(vertex)],p[li(vertex-1)]]
-    draw_polygon(empty_polygon,'pink') // use e.g. violet to make it visible
-}
-else
-draw_polygon(p)
-*/
-
-///draw_polygon(p) // TODO remove
-
-///} // end of function set_p(p){
-
-function draw_polygon(p,fillStyle='grey'){
-// *** draw pixel
-const dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
-
-// bounds of polygon "p"
-let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
-
-// *** fill polygon
-c.fillStyle=fillStyle
-for(let x=xmin; x<=xmax; x++) for(let y=ymin; y<=ymax; y++){
-    let draw_or_not
-    // ATM this is only for triangle or quad (2 triangles forming 1 quad) *** deactivated
-    ////if(p.length==3) draw_or_not=inside({x,y},t[0])
-    ////if(p.length==4) draw_or_not=inside({x,y},t[0])||inside({x,y},t[1])
-    draw_or_not=inside({x,y},p)
-
-    // boolean subtraction: A and (not B)
-    if(false) // deactivated
-    if(tntd==null)
-    draw_or_not=inside({x,y},ttd)
-    else
-    draw_or_not=inside({x,y},ttd)&&!inside({x,y},tntd)
-
-    //c.fillStyle=draw_or_not?fillStyle:'black'; dp(x,y)
-
-    if(draw_or_not) dp(x,y)
-
-    // generalized possibly TODO this has bugs
-    //if(inside({x,y},p)) dp(x,y)
-}
-}
-
-// *** draw big pixels for vertices
-//draw_vertices(p)
-function draw_vertices(p){
-dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
-
-for(const [index,point] of p.entries()){
-    c.fillStyle=colors(index) ///colors[index%colors.length]
-    dbp(point)
-}
-
-/*
-c.fillStyle=colors[0]
-dbp(p[0])
-
-c.fillStyle=colors[1]
-dbp(p[1])
-
-c.fillStyle=colors[2]
-dbp(p[2])
-
-if(typeof p[3]!='undefined'){ // 4 vertices
-c.fillStyle=colors[3]
-dbp(p[3])
-}
-
-if(typeof p[4]!='undefined'){ // 5 vertices
-c.fillStyle=colors[4]
-dbp(p[4])
-}
-*/
-
-} // end of draw_vertices(p)
-
-// } // end of set_p(p)
+    // *** draw "big pixels" for vertices
+    function draw_vertices(p) {
+        let draw_big_pixel = (px) => c.fillRect(px.x - 5, px.y - 5, 10, 10);
+        for (const [index, point] of p.entries()) {
+            c.fillStyle = colors(index); // color of vertices
+            draw_big_pixel(point);
+        }
+    }
 </script>
