@@ -137,16 +137,25 @@ if(iv.length>0){
     let c=iv[0] // first TODO current
     ///console.log('c',c)
 
+    polygon=polygon.slice()
     let concavity=[ polygon[li(c+1)], polygon[li(c)], polygon[li(c-1)] ]
 
     let without=polygon.slice()
     without.splice(c,1)
     ///alert(draw_polygon)
-    draw_polygon(without,'grey')
-    draw_polygon(concavity,'black')
+    draw_concavity(without.slice(),'grey') // recursive function call
+    draw_polygon(concavity.slice(),'pink') // or black
 }
 //else console.log('iv empty')
+else
+{
+    draw_polygon(polygon.slice())
+}
 } // end of draw_concavity(polygon)
+
+///note on VERSION
+//view-source:https://arkenidar.github.io/point_in_polygon/quads_or_triangles.html
+// https://github.com/arkenidar/point_in_polygon/commit/abdc256a1d52e32ef40d0f183f0e1c4f1d3bd036
 
 function set_p(p){
 // TODO handle special cases: concave polygons, aligned vertices, coincident vertices, self-intersecting polygons
