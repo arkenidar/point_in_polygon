@@ -40,6 +40,18 @@ function inside(px,p){ // px: a given point, p: a polygon (list of points)
     return true
 }
 
+// bounds of polygon "p"
+function bounds_of_poligon(p){
+var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
+for(let point of p){
+    xmin=Math.min(xmin,point.x)
+    xmax=Math.max(xmax,point.x)
+    ymin=Math.min(ymin,point.y)
+    ymax=Math.max(ymax,point.y)
+}
+return {xmin,ymin,xmax,ymax}
+}
+
 function on_canvas_click(event){
 
 function mouse_pos(event){
@@ -53,7 +65,8 @@ return {
 let point=mouse_pos(event)
 ///console.log(point) // LOG
 
-if(inside(point,p)==false)
+// this if excludes points inside the convex hull
+///if(inside(point,p)==false)
 p.push(point)
 
 set_p(p)
@@ -107,48 +120,53 @@ j=`[{"x":144,"y":33},{"x":265,"y":85},{"x":158,"y":115},{"x":139,"y":140}]`
 
 ////set_p(p)
 
+// TODO WIP function draw_concavity(polygon)
+function draw_concavity(polygon){
+let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
+const li=(i)=>i<polygon.length?(i<0?i+polygon.length:i):i-polygon.length // loop index
+for(const [i,point] of p.entries()){
+    const is_concavity=side(p[li(i+1)],p[li(i-1)],p[li(i)])==1
+    ///console.log(colors(i),is_concavity,'draw_concavity(polygon)')
+    if(is_concavity){
+        iv.push(i)
+        // TODO note: break means only 1 vertex at most (or 0)
+        break
+    }
+}
+if(iv.length>0){
+    let c=iv[0] // first TODO current
+    ///console.log('c',c)
+
+    let concavity=[ polygon[li(c+1)], polygon[li(c)], polygon[li(c-1)] ]
+
+    let without=polygon.slice()
+    without.splice(c,1)
+    ///alert(draw_polygon)
+    draw_polygon(without,'grey')
+    draw_polygon(concavity,'black')
+}
+//else console.log('iv empty')
+} // end of draw_concavity(polygon)
+
 function set_p(p){
 // TODO handle special cases: concave polygons, aligned vertices, coincident vertices, self-intersecting polygons
-console.log(JSON.stringify(p)) // LOG
+///console.log(JSON.stringify(p)) // LOG
 clear_canvas()
+const log=console.log
 
-if(false){ // TODO possibly replaced by: "if point is inside do not add it" -> convex hull
-let iv=[] // inside vertices, vertices inside the convex hull of the given polygon
-for(let [i,point] of p.entries()){
-    let vertex_i=(i+0)%p.length
-    let li=(i)=>i<p.length?(i<0?i+p.length:i):i-p.length // loop index
-    let is_concavity=side(p[li(i+1)],p[li(i-1)],p[li(i)])==1
-    console.log(colors(vertex_i),is_concavity)
-    if(is_concavity)
-        iv.push(vertex_i)
-}
-console.log('iv',JSON.stringify(iv)) // LOG
 
-p=convex_hull(p)
-console.log('ch',JSON.stringify(p)) // LOG
 
-function convex_hull(p){
-    let cp=[] // convex polygon
-    for(let [i,vertex] of p.entries()){
-        if(iv.indexOf(i)==-1)
-            cp.push(vertex)
-    }
-    return cp
-}
-} // end of if
-
-// bounds of polygon "p"
-var [xmin,xmax,ymin,ymax]=[p[0].x,p[0].y,p[0].x,p[0].y]
-for(let point of p){
-    xmin=Math.min(xmin,point.x)
-    xmax=Math.max(xmax,point.x)
-    ymin=Math.min(ymin,point.y)
-    ymax=Math.max(ymax,point.y)
-}
+let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
 
 // use them to draw a bounding rectangle
 c.fillStyle='pink'
 c.fillRect(xmin,ymin,xmax-xmin,ymax-ymin)
+
+// first draw polygon, then draw vertices "big pixels"
+draw_concavity(p)
+draw_vertices(p)
+
+} // end of set_p(p)
 
 // the following triggers bugs in sort_p()
 //p=JSON.parse(`[{"x":176,"y":16},{"x":151,"y":4},{"x":58,"y":17},{"x":244,"y":38}]`)
@@ -271,13 +289,16 @@ else
 draw_polygon(p)
 */
 
-draw_polygon(p)
+///draw_polygon(p) // TODO remove
 
 ///} // end of function set_p(p){
 
 function draw_polygon(p,fillStyle='grey'){
 // *** draw pixel
 const dp=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
+
+// bounds of polygon "p"
+let {xmin,ymin,xmax,ymax}=bounds_of_poligon(p)
 
 // *** fill polygon
 c.fillStyle=fillStyle
@@ -305,7 +326,7 @@ for(let x=xmin; x<=xmax; x++) for(let y=ymin; y<=ymax; y++){
 }
 
 // *** draw big pixels for vertices
-draw_vertices(p)
+//draw_vertices(p)
 function draw_vertices(p){
 dbp=(px)=>c.fillRect(px.x-5,px.y-5,10,10)
 
@@ -337,5 +358,5 @@ dbp(p[4])
 
 } // end of draw_vertices(p)
 
-} // end of set_p(p)
+// } // end of set_p(p)
 </script>
