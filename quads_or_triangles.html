@@ -5,7 +5,7 @@
 remember to not self-intersect and to use counter-clockwise ordering.
 <button onclick="location.reload()">reload</button>
 <br>
-<canvas id="canvas"></canvas>
+<canvas id="canvas" style="border: 1px dotted black"></canvas>
 <script>
     const log = console.log;
     const canvas = document.getElementById('canvas');
@@ -31,7 +31,7 @@ remember to not self-intersect and to use counter-clockwise ordering.
     }
 
     // https://en.wikipedia.org/wiki/Point_in_polygon
-    function inside(px, p) { // px: a given point, p: a polygon (list of points)
+    function in_convex_polygon(px, p) { // px: a given point, p: a polygon (list of points)
         if (p.length <= 2) return false;
         const check = (p1, p2) => side(px, p1, p2) <= 0;
         for (let i = 0; i < p.length; i++) {
@@ -73,12 +73,11 @@ remember to not self-intersect and to use counter-clockwise ordering.
     clear_canvas();
 
     function clear_canvas() {
-        c.fillStyle = 'black';
-        c.fillRect(0, 0, canvas.width, canvas.height);
+        c.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    function draw_concavity(polygon) {
-        if (polygon.length < 3) return;
+    function in_concave_polygon({x,y},polygon) {
+        if (polygon.length < 3) return false;
         let p = polygon;
         let iv = []; // inside vertices, vertices inside the convex hull of the given polygon
         const li = (i) => i < polygon.length ? (i < 0 ? i + polygon.length : i) : i - polygon.length; // loop index
@@ -95,20 +94,19 @@ remember to not self-intersect and to use counter-clockwise ordering.
             let concavity = [polygon[li(c + 1)], polygon[li(c)], polygon[li(c - 1)]];
             let without = polygon.slice();
             without.splice(c, 1);
-            draw_concavity(without.slice(), 'grey'); // recursive function call
-            draw_polygon(concavity.slice(), 'black'); // pink or black
+            ///draw_concavity(without.slice(), 'grey'); // recursive function call
+            ///draw_polygon(concavity.slice(), 'black'); // pink or black
+            return in_concave_polygon({x,y},without.slice()) &&
+                !in_convex_polygon({x,y},concavity.slice());
         } else {
-            draw_polygon(polygon.slice());
+            ///draw_polygon(polygon.slice());
+            return in_convex_polygon({x,y},polygon.slice());
         }
-    } // end of draw_concavity(polygon)
+    } // end of in_concave_polygon({x,y},polygon)
     function set_p(p) {
         clear_canvas();
-        // draw a bounding rectangle
-        let {x_min, y_min, x_max, y_max} = bounds_of_polygon(p);
-        c.fillStyle = 'black'; // pink or black
-        c.fillRect(x_min, y_min, x_max - x_min, y_max - y_min);
         // first draw polygon, then draw vertices "big pixels"
-        draw_concavity(p);
+        draw_polygon(p);
         draw_vertices(p);
     }
 
@@ -126,7 +124,7 @@ remember to not self-intersect and to use counter-clockwise ordering.
         // *** fill polygon
         c.fillStyle = fillStyle;
         for (let x = x_min; x <= x_max; x++) for (let y = y_min; y <= y_max; y++) {
-            if (inside({x, y}, p)) dp(x, y)
+            if (in_concave_polygon({x, y}, p)) dp(x, y)
         }
     }
 
