@@ -88,20 +88,30 @@ remember to not self-intersect and to use counter-clockwise ordering.
                 break; // break means only 1 vertex at most (or 0)
             }
         }
-        if (iv.length > 0) {
-            let c = iv[0]; // first, current
-            polygon = polygon.slice();
-            let concavity = [polygon[li(c + 1)], polygon[li(c)], polygon[li(c - 1)]];
-            let without = polygon.slice();
-            without.splice(c, 1);
-            ///draw_concavity(without.slice(), 'grey'); // recursive function call
-            ///draw_polygon(concavity.slice(), 'black'); // pink or black
-            return in_concave_polygon({x,y},without.slice()) &&
-                !in_convex_polygon({x,y},concavity.slice());
-        } else {
+        if(iv.length === 0) {
             ///draw_polygon(polygon.slice());
             return in_convex_polygon({x,y},polygon.slice());
         }
+        let c = iv[0]; // first, current
+        polygon = polygon.slice();
+        let concavity = [polygon[li(c + 1)], polygon[li(c)], polygon[li(c - 1)]];
+        let without = polygon.slice();
+        without.splice(c, 1);
+        ///draw_concavity(without.slice(), 'grey'); // recursive function call
+        ///draw_polygon(concavity.slice(), 'black'); // pink or black
+        /*
+        return (
+            (!in_convex_polygon({x,y},concavity.slice()))
+            &&
+            in_concave_polygon({x,y},without.slice())
+        );
+        */
+        if(in_convex_polygon({x,y},concavity.slice()))
+            return false;
+        //else
+        // is this tail call recursion optimizable? how? find clarity on this
+        return in_concave_polygon({x,y},without.slice());
+
     } // end of in_concave_polygon({x,y},polygon)
     function set_p(p) {
         clear_canvas();
