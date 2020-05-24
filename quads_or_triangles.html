@@ -76,48 +76,81 @@ remember to not self-intersect and to use counter-clockwise ordering.
         c.clearRect(0, 0, canvas.width, canvas.height);
     }
 
+    /*
+    function punto_in_poligono(punto, poligono){
+     while(true){
+
+        // minimo 3 vertici oppure considerato punto esterno.
+
+        // trova la prima concavità se c'è, ovvero
+        // il primo vertice che rende questo poligono un poligono concavo.
+
+        // senza concavità il poligono è convesso.
+        // (la gestione dei poligoni convessi è semplice
+        // e si combina con questa casistica dei poligoni anche concavi
+        // se almeno una concavità è presente).
+
+        // se il poligono è concavo:
+
+        // 1 - forma un triangolo di concavità
+        // con il vertice concavo ed i 2 vertici adiacenti
+
+        // 2 - se il punto è nel triangolo di concavità (passo 1)
+        // il punto è fuori
+
+        // 3 - forma un nuovo poligono con questa concavità rimossa
+        // (o meglio con rimosso il punto della prima concavità)
+
+        // 4 - ripeti ma usando il nuovo poligono con
+        // quel punto di concavità rimosso (passo 3) come poligono da testare
+     }
+    }
+    */
+
     function in_concave_polygon({x, y}, polygon) {
+
         while (true) {
+
+            // minimum of 3 vertices
             if (polygon.length < 3) return false;
+
+            // find the first concavity vertex if there is
             let p = polygon;
-            let iv = []; // inside vertices, vertices inside the convex hull of the given polygon
+            let first_concavity_vertex = null;
             const li = (i) => i < polygon.length ? (i < 0 ? i + polygon.length : i) : i - polygon.length; // loop index
             for (let i = 0; i < polygon.length; i++) {
                 const is_concavity = side(p[li(i + 1)], p[li(i - 1)], p[li(i)]) === 1;
                 if (is_concavity) {
-                    iv.push(i);
+                    first_concavity_vertex = i;
                     break; // break means only 1 vertex at most (or 0)
                 }
             }
-            if (iv.length === 0) {
-                ///draw_polygon(polygon.slice());
-                return in_convex_polygon({x, y}, polygon.slice());
-            }
-            let c = iv[0]; // first, current
+
+            // if no concavity found then polygon is convex
+            if (first_concavity_vertex === null) return in_convex_polygon({x, y}, polygon.slice());
+
+            // if polygon is concave:
+
+            // 1 - form a concavity triangle
+            let vertex_index = first_concavity_vertex;
             polygon = polygon.slice();
-            let concavity = [polygon[li(c + 1)], polygon[li(c)], polygon[li(c - 1)]];
+            let concavity = [polygon[li(vertex_index + 1)], polygon[li(vertex_index)], polygon[li(vertex_index - 1)]];
+
+            // 2 - form a new polygon with the concavity removed
             let without = polygon.slice();
-            without.splice(c, 1);
-            ///draw_concavity(without.slice(), 'grey'); // recursive function call
-            ///draw_polygon(concavity.slice(), 'black'); // pink or black
-            /*
-            return (
-                (!in_convex_polygon({x,y},concavity.slice()))
-                &&
-                in_concave_polygon({x,y},without.slice())
-            );
-            */
-            if (in_convex_polygon({x, y}, concavity.slice()))
-                return false;
-            //else
+            without.splice(vertex_index, 1);
 
+            // 3 - if point in concavity triangle return false (outside)
+            if (in_convex_polygon({x, y}, concavity.slice())) return false;
+
+            // 4 - go to the cycle beginning using the polygon
+            // with the concavity removed as a polygon to test
             polygon = without.slice();
-            // is this tail call recursion optimizable? how? find clarity on this
-            ///return in_concave_polygon({x, y}, without.slice());
 
-        }
+        } // end of while(true)
 
     } // end of in_concave_polygon({x,y},polygon)
+
     function set_p(p) {
         clear_canvas();
         // first draw polygon, then draw vertices "big pixels"
