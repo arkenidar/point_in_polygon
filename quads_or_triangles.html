@@ -127,13 +127,12 @@ remember to not self-intersect and to use counter-clockwise ordering.
             }
 
             // if no concavity found then polygon is convex
-            if (first_concavity_vertex === null) return in_convex_polygon({x, y}, polygon.slice());
+            if (first_concavity_vertex === null) return in_convex_polygon({x, y}, polygon);
 
             // if polygon is concave:
 
             // 1 - form a concavity triangle
             let vertex_index = first_concavity_vertex;
-            polygon = polygon.slice();
             let concavity = [polygon[li(vertex_index + 1)], polygon[li(vertex_index)], polygon[li(vertex_index - 1)]];
 
             // 2 - form a new polygon with the concavity removed
@@ -141,11 +140,11 @@ remember to not self-intersect and to use counter-clockwise ordering.
             without.splice(vertex_index, 1);
 
             // 3 - if point in concavity triangle return false (outside)
-            if (in_convex_polygon({x, y}, concavity.slice())) return false;
+            if (in_convex_polygon({x, y}, concavity)) return false;
 
             // 4 - go to the cycle beginning using the polygon
             // with the concavity removed as a polygon to test
-            polygon = without.slice();
+            polygon = without;
 
         } // end of while(true)
 
