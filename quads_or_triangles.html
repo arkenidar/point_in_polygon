@@ -108,13 +108,12 @@ remember to not self-intersect and to use counter-clockwise ordering.
     */
 
     function in_concave_polygon({x, y}, polygon) {
-
         while (true) {
 
             // minimum of 3 vertices
             if (polygon.length < 3) return false;
 
-            // find the first concavity vertex if there is
+            // find the first concavity vertex if there is one
             let p = polygon;
             let first_concavity_vertex = null;
             const li = (i) => i < polygon.length ? (i < 0 ? i + polygon.length : i) : i - polygon.length; // loop index
@@ -126,25 +125,23 @@ remember to not self-intersect and to use counter-clockwise ordering.
                 }
             }
 
-            // if no concavity found then polygon is convex
+            // if no concavity is found then the polygon is convex
             if (first_concavity_vertex === null) return in_convex_polygon({x, y}, polygon);
 
             // if polygon is concave:
 
-            // 1 - form a concavity triangle
+            // form a "concavity triangle"
             let vertex_index = first_concavity_vertex;
             let concavity = [polygon[li(vertex_index + 1)], polygon[li(vertex_index)], polygon[li(vertex_index - 1)]];
 
-            // 2 - form a new polygon with the concavity removed
-            let without = polygon.slice();
-            without.splice(vertex_index, 1);
-
-            // 3 - if point in concavity triangle return false (outside)
+            // if point in "concavity triangle" return false (outside)
             if (in_convex_polygon({x, y}, concavity)) return false;
 
-            // 4 - go to the cycle beginning using the polygon
+            // form a new polygon with the concavity removed
+            polygon.splice(vertex_index, 1);
+
+            // go to the cycle beginning using the polygon
             // with the concavity removed as a polygon to test
-            polygon = without;
 
         } // end of while(true)
 
@@ -171,7 +168,7 @@ remember to not self-intersect and to use counter-clockwise ordering.
         // *** fill polygon
         c.fillStyle = fillStyle;
         for (let x = x_min; x <= x_max; x++) for (let y = y_min; y <= y_max; y++) {
-            if (in_concave_polygon({x, y}, p)) dp(x, y)
+            if (in_concave_polygon({x, y}, p.slice())) dp(x, y)
         }
     }
 
