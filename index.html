@@ -8,10 +8,17 @@
 </head>
 
 <body>
-    <div>remember to not self-intersect and to use counter-clockwise ordering.</div>
+    <div><a href="https://github.com/arkenidar/point_in_polygon" target="_blank">
+            github repo :
+            arkenidar/point_in_polygon . </a>
+    </div>
+    <div> click on canvas to add vertices . </div>
+    <div> ( remember to not self-intersect and to use counter-clockwise ordering ) . </div>
+    <div> click on "reload" to clear canvas . </div>
     <button onclick="location.reload()">reload</button>
     <br>
     <canvas id="canvas" style="border: 1px dotted black"></canvas>
+    <!-- geometric.js for Point-In-Polygon -->
     <script src="geometric.js"></script>
     <script>
         const log = console.log;
