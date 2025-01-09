@@ -1,62 +1,71 @@
 <!doctype html>
-<title>is_inside_polygon?</title>
-<meta charset="utf-8">
-<button onclick="location.reload()">another</button>
-<canvas id="canvas">
-<script>
-rx=()=>Math.random()*document.all.canvas.width
-ry=()=>Math.random()*document.all.canvas.height
+<html>
 
-var p1={x:rx(),y:ry()}
-var p2={x:rx(),y:ry()}
-var p3={x:rx(),y:ry()}
+<head>
+    <title>is_inside_polygon?</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
 
-function side(p,p1,p2){
-    /*
-    https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
-    Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    It is 0 on the line, and +1 on one side, -1 on the other side.
-    */
-    var Ax=p1.x, Ay=p1.y, Bx=p2.x, By=p2.y, X=p.x, Y=p.y
-    function sign(x){
-        if(x==0) return 0
-        else if(x>0) return 1
-        else return -1
-    }
-    position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
-    return position
-}
-if(side(p1, p2, p3)!=-1){
-    [p3,p2]=[p2,p3]
-}
+<body>
+    <button onclick="location.reload()">another</button>
+    <canvas id="canvas"></canvas>
+    <script>
+        rx = () => Math.random() * document.all.canvas.width
+        ry = () => Math.random() * document.all.canvas.height
 
-var c=document.all.canvas.getContext("2d")
-var p=(x,y,s=1)=>{c.fillRect(x,y,s,s)}
+        var p1 = { x: rx(), y: ry() }
+        var p2 = { x: rx(), y: ry() }
+        var p3 = { x: rx(), y: ry() }
 
-for(var x=0; x<document.all.canvas.width; x++)
-    for(var y=0; y<document.all.canvas.height; y++)
-    {
-        function inside(p,p1,p2,p3){
-            var check = (x1,x2)=> side(p,x1,x2)<=0
-            return check(p1,p2)
-            && check(p2,p3)
-            && check(p3,p1)
+        function side(p, p1, p2) {
+            /*
+            https://stackoverflow.com/questions/1560492/how-to-tell-whether-a-point-is-to-the-right-or-left-side-of-a-line
+            Use the sign of the determinant of vectors (AB,AM), where M(X,Y) is the query point:
+            position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+            It is 0 on the line, and +1 on one side, -1 on the other side.
+            */
+            var Ax = p1.x, Ay = p1.y, Bx = p2.x, By = p2.y, X = p.x, Y = p.y
+            function sign(x) {
+                if (x == 0) return 0
+                else if (x > 0) return 1
+                else return -1
+            }
+            position = sign((Bx - Ax) * (Y - Ay) - (By - Ay) * (X - Ax))
+            return position
         }
-        c.fillStyle=inside({x,y},p1,p2,p3)?'grey':'black'
-        p(x,y)
-    }
+        if (side(p1, p2, p3) != -1) {
+            [p3, p2] = [p2, p3]
+        }
 
-dp=(p)=>c.fillRect(p.x-5,p.y-5,10,10)
+        var c = document.all.canvas.getContext("2d")
+        var p = (x, y, s = 1) => { c.fillRect(x, y, s, s) }
 
-c.fillStyle='red'
-dp(p1)
+        for (var x = 0; x < document.all.canvas.width; x++)
+            for (var y = 0; y < document.all.canvas.height; y++) {
+                function inside(p, p1, p2, p3) {
+                    var check = (x1, x2) => side(p, x1, x2) <= 0
+                    return check(p1, p2)
+                        && check(p2, p3)
+                        && check(p3, p1)
+                }
+                c.fillStyle = inside({ x, y }, p1, p2, p3) ? 'grey' : 'black'
+                p(x, y)
+            }
 
-c.fillStyle='green'
-dp(p2)
+        dp = (p) => c.fillRect(p.x - 5, p.y - 5, 10, 10)
 
-c.fillStyle='blue'
-dp(p3)
+        c.fillStyle = 'red'
+        dp(p1)
 
-</script>
+        c.fillStyle = 'green'
+        dp(p2)
 
+        c.fillStyle = 'blue'
+        dp(p3)
+
+    </script>
+
+</body>
+
+</html>
