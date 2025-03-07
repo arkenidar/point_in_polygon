@@ -9,6 +9,8 @@ Draws by checking if point is inside. This requires a "point in polygon" testing
 
 - <https://arkenidar.github.io/point_in_polygon/index.html>
 - <https://arkenidar.github.io/point_in_polygon/geometric.js>
+- <https://arkenidar.com/web/gh/point_in_polygon/index.html>
+- <https://arkenidar.com/web/gh/point_in_polygon/geometric.js>
 
 ## Lua, Love2D version
 
