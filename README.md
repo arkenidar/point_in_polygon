@@ -1,6 +1,14 @@
 # point_in_polygon
 Draws by checking if point is inside. This requires a "point in polygon" testing.
 
+## documented elsewhere ( ??? )
+- <https://en.wikipedia.org/wiki/Point_in_polygon>
+  - mentions :
+    - Ray casting algorithm .
+    - Winding number algorithm .
+  - doesn't mention :
+    - Concavity-removal algorithm ( this how I named this not sure if it's already discovered and baptized , named somehow ) .
+
 ## gif-recorded usage demos
 
 ![PIP Demo1: concave polygon Point-In-Polygon, in DHTML](screens/PIP-concave--Peek--01-11-2023--09-25.gif?raw=true "PIP Demo 1")
